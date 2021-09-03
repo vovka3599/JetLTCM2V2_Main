@@ -11,7 +11,8 @@
 
 #include "config.h"
 
-struct addr_params {
+struct addr_params 
+{
     char* saddr;            // IP адрес UDP Source в виде строки.
     uint16_t port;          // Порт, который слушает UDP Source
     int channel;            // Номер канала HFR

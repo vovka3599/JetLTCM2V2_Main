@@ -20,6 +20,11 @@ set(SOURCES
 
     udp.h
     udp.cpp
+
+    JetLTCM.h
+    JetLTCM.cpp
+
+    config.h
     )
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/can_h)

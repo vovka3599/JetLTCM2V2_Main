@@ -6,10 +6,10 @@ void Create_udp_socket(int *s)
     strcpy(saddr, ADDRESS_DEFAULT);
 
     struct addr_params arg;
-    arg.saddr = &saddr[0];  // IP адрес UDP Source в виде строки.
-    arg.port = PORT_DEFAULT;        // Порт, который слушает UDP Source
+    arg.saddr = &saddr[0];
+    arg.port = PORT_DEFAULT;
     arg.channel = 0;
-    arg.fft_size = FFT_SIZE_DEFAULT; // Количество комплексных отсчетов для FFT, которые будут записаны в UDP пакет.
+    arg.fft_size = FFT_SIZE_DEFAULT;
 
     struct sockaddr_in sin;
     struct protoent* ppe;
@@ -49,5 +49,5 @@ void Create_udp_socket(int *s)
         exit(0);
     }
 
-    printf("connected to UDP socket. address: %s, port %d \n", arg.saddr, arg.port);
+    printf("Connected to UDP socket. address: %s, port %d \n", arg.saddr, arg.port);
 }
