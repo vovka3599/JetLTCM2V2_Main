@@ -5,10 +5,12 @@
 #include "can_h/can.h"
 #include "can_h/scan.h"
 #include "can_h/control.h"
-#include "udp.h"
-
 #include "JetLTCM.h"
 #include "config.h"
+
+#if UDP_SEND
+#include "udp.h"
+#endif
 
 #if FILE_SAVE
 #include <fstream>
@@ -27,78 +29,118 @@ void wait_exit()
     exit_thread = 1;
 }
 
-int main()
+void work()
 {
-	IQ_one_ch *send_buf = new IQ_one_ch[DEFAULT_SIZE];
+    int rc;
+    IQ *rb;
+    IQ_one_ch *send_buf = new(std::nothrow) IQ_one_ch[DEFAULT_SIZE];
+    if (send_buf == nullptr)
+    {
+        printf("Memory allocation error\n");
+        exit(0);
+    }
 
+#if UDP_SEND
 	int udp_socket;
-    Create_udp_socket(&udp_socket);
-
-	// Адрес на шине CAN хоста.
-    uint8_t haddr = 126;
-    Node can("can0");
-
-    // Ищем адрес приёмника по имени.
-   	ScanAdapter scan(can, haddr, "RCV433");
-    uint8_t daddr = scan.GetValue();
-
-    // Формируем массив команд.
-    ControlAdapters controls(can, haddr, daddr);
-    controls.Insert(Control::FREQ);
-    controls.Insert(Control::ATT);
-
-    // Устанвливаем значение частоты и аттенюации
-    controls.SetValue<uint32_t>(Control::FREQ, 868); // 433 МГц
-    controls.SetValue<uint16_t>(Control::ATT,  0); // step = 20. value = *0.1
-
-    std::cout << "Freq [MHz]: "<< controls.GetValue<uint32_t>(Control::FREQ) << std::endl;
-    std::cout << "Att  [dB]: " << 0.1 * controls.GetValue<uint16_t>(Control::ATT) << std::endl;
+    rc = сreate_udp_socket(&udp_socket);
+    if(rc < 0)
+    {
+        printf("Create udp socket fail\n");
+        exit(0);
+    }
+#endif
+    
+    JetLTCM *jet = new(std::nothrow) JetLTCM(DEVICE_C2H, DEVICE_USER, DMA_BUF_COUNT, DMA_BUF_SIZE);
+    if (jet == nullptr)
+    {
+        printf("Memory allocation error\n");
+        exit(0);
+    }
+    rc = jet->Init();
+    if(rc < 0)
+    {
+        printf("Init JetLTCM fail\n");
+        exit(0);
+    }
+    rc = jet->SetParam(SAMP_FREQ, REAL_DATE, CONST_VALUE, DDS_FREQ);
+    if(rc < 0)
+    {
+        printf("Set parameter JetLTCM fail\n");
+        exit(0);
+    }
 
     std::thread t(wait_exit);
     t.detach();
 
-    JetLTCM *jet = new JetLTCM(DEVICE_C2H, DEVICE_USER, DMA_BUF_COUNT, DMA_BUF_SIZE);
-    jet->Init();
-    jet->SetParam(SAMP_FREQ_250_kHz, true, 0x0, 0x18000000);
-
 #if FILE_SAVE
-    std::ofstream only("test_1MHz.complex", std::ios::app | std::ios::binary);
+    std::ofstream file("test.complex", std::ios::app | std::ios::binary);
 #endif
 
-    IQ *rb;
+    printf("Start receive data\n");
     while(exit_thread == 0)
 	{
         rb = jet->GetData();
-        for(int i = 0; i < 2048; i++)
+        if (rb)
         {
-            send_buf[i].I = rb[i].I_1;
-            send_buf[i].Q = rb[i].Q_1;
-        }
+            for(int i = 0; i < DEFAULT_SIZE; i++)
+            {
+                send_buf[i].I = rb[i].I_1;
+                send_buf[i].Q = rb[i].Q_1;
+            }
+
+            // User code
+
+            // User code
 
 #if FILE_SAVE
-        only.write((char*)send_buf, 2048*sizeof(IQ_one_ch));
+            file.write((char*)send_buf, DEFAULT_SIZE*sizeof(IQ_one_ch));
 #endif
 
-        for(int j = 0; j < 1; j++)
-        {
-            ssize_t ret = send(udp_socket, send_buf+j*2048, FFT_SIZE_DEFAULT, 0);
+#if UDP_SEND
+            ssize_t ret = send(udp_socket, send_buf, FFT_SIZE_DEFAULT, 0);
             if(ret != FFT_SIZE_DEFAULT) 
             {
-                printf("Error send data to UDP. Expected %d, send %d \n", (int)FFT_SIZE_DEFAULT, (int)ret);
+                printf("Error send data to UDP. Expected %d, send %d\n", (int)FFT_SIZE_DEFAULT, (int)ret);
                 if(ret < 0)
-                printf("error send UDP: %s \n", strerror(errno));
+                    printf("Error send UDP: %s\n", strerror(errno));
             }
             usleep(3000);
+#endif
         }
 	}
-
 #if FILE_SAVE
-    only.close();
+    file.close();
 #endif
 
     delete[] send_buf;
     delete jet;
-    printf(" Exit from sending udp data loop \n");
+    printf("Exit from work loop\n");
+}
+
+int main()
+{
+	// Can bus address
+    uint8_t haddr = 126;
+    Node can("can0");
+
+    // Receiver address by name
+   	ScanAdapter scan(can, haddr, "RCV433");
+    uint8_t daddr = scan.GetValue();
+
+    // Array of commands
+    ControlAdapters controls(can, haddr, daddr);
+    controls.Insert(Control::FREQ);
+    controls.Insert(Control::ATT);
+
+    // Setting the frequency and attenuation
+    controls.SetValue<uint32_t>(Control::FREQ, 868);    // in МГц
+    controls.SetValue<uint16_t>(Control::ATT,  0);      // step = 20. value = step*0.1
+
+    printf("Freq [MHz]: %u\n", controls.GetValue<uint32_t>(Control::FREQ));
+    printf("Att  [dB]: %f\n", 0.1 * controls.GetValue<uint16_t>(Control::ATT));
+
+    std::thread t(work);
+    t.join();
 
 	return 0;
 }

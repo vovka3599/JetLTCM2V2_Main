@@ -3,21 +3,22 @@
 
 #include <iostream>
 
-    enum
-    {
-        SAMP_FREQ_1_MHz = 0,
-        SAMP_FREQ_500_kHz = 1,
-        SAMP_FREQ_250_kHz = 2,
-        SAMP_FREQ_125_kHz = 3
-    };
-
+enum
+{
+    SAMP_FREQ_10_MHz    = 0,
+    SAMP_FREQ_1_MHz     = 1,
+    SAMP_FREQ_500_kHz   = 2,
+    SAMP_FREQ_250_kHz   = 3,
+    SAMP_FREQ_125_kHz   = 4,
+    SAMP_FREQ_62_5_kHz  = 5
+};
 
 /**
  * @brief 
  * 
  * Control
  *      reset       : alctive low
- *      samp_freq   : 0 - 1 MHz, 1 - 500 kHz, 2 - 250 kHz, 3 - 125 kHz (do not change in real time).
+ *      samp_freq   : 0 - 10 MHz, 1 - 1 MHz, 2 - 500 kHz, 3 - 250 kHz, 4 - 125 kHz, 5 - 62.5 kHz
  * 
  * real date        : 31 bit - 1 = real date, 0 = const; 15-0 bit - const value (if 31 bit = 0, else ignored); 30-16 bit reserved.
  * dds_freq         : Output frequency dds. Active 28:0 bit.
@@ -27,8 +28,8 @@ struct Registers
     struct Control
     {
         uint32_t reset : 1;
-        uint32_t samp_freq : 2;
-        uint32_t : 29;
+        uint32_t samp_freq : 3;
+        uint32_t : 28;
     };
 
     volatile uint32_t real_date;

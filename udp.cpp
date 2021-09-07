@@ -1,6 +1,6 @@
 #include "udp.h"
 
-void Create_udp_socket(int *s)
+int сreate_udp_socket(int *s)
 {
     char saddr[128];
     strcpy(saddr, ADDRESS_DEFAULT);
@@ -8,7 +8,6 @@ void Create_udp_socket(int *s)
     struct addr_params arg;
     arg.saddr = &saddr[0];
     arg.port = PORT_DEFAULT;
-    arg.channel = 0;
     arg.fft_size = FFT_SIZE_DEFAULT;
 
     struct sockaddr_in sin;
@@ -19,26 +18,26 @@ void Create_udp_socket(int *s)
     if((sin.sin_addr.s_addr = inet_addr(arg.saddr)) == INADDR_NONE) 
     {
         printf("Can't get ip address %s  \n", arg.saddr);
-        exit(0);
+        return -1;
     }
 
     if((sin.sin_port = htons(arg.port)) == 0) 
     {
         printf("Can't get ip port %d \n", arg.port);
-        exit(0);
+        return -1;
     }
 
     if((ppe = getprotobyname("udp")) == 0) 
     {
         printf("Can't get protocol entry for udp \n");
-        exit(0);
+        return -1;
     }
 
     *s = socket(PF_INET, SOCK_DGRAM, ppe->p_proto);
     if(*s < 0) 
     {
         printf("Can't create socket: %s \n", strerror(errno));
-        exit(0);
+        return -1;
     }
     printf("created UDP socket... \n");
 
@@ -46,8 +45,9 @@ void Create_udp_socket(int *s)
     {
         printf("Can't connect socket to %s, port %d: %s \n", arg.saddr, arg.port, strerror(errno));
         close(*s);
-        exit(0);
+        return -1;
     }
 
     printf("Connected to UDP socket. address: %s, port %d \n", arg.saddr, arg.port);
+    return 0;
 }

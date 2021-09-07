@@ -46,14 +46,33 @@ public:
 
     ~JetLTCM();
 
+    /**
+     * @brief       Device initialization
+     * 
+     * @return int  execution result
+     */
     int Init();
+
+    /**
+     * @brief Set the Param object
+     * 
+     * @param _samp_freq    sampling frequency
+     * @param _real_date    real data or constant
+     * @param _const_value  constant value. if _real_date = true - ignored
+     * @param _dds_freq     synthesizer frequency    
+     * @return int          execution result
+     */
     int SetParam(uint8_t _samp_freq, 
                 bool _real_date, 
                 uint16_t _const_value,
                 uint32_t _dds_freq);
+
+    /**
+     * @brief Get the Data object
+     * 
+     * @return IQ* pointer to data
+     */
     IQ* GetData();
 };
-
-
 
 #endif // JETLTCM_H

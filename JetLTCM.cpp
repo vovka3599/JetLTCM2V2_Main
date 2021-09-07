@@ -33,7 +33,7 @@ int JetLTCM::Init()
     fpga_fd = open(device_c2h.c_str(), O_RDWR | O_NONBLOCK);
     if(fpga_fd < 0) 
     {
-        printf(" Error open device.\n");
+        printf("Error open device.\n");
         return -1;
     }
     printf("Opened device: %s\n", device_c2h.c_str());
@@ -41,7 +41,7 @@ int JetLTCM::Init()
     rc = ioctl(fpga_fd, IOCTL_HFR4_SET_BUFFERS, &dma_buf_params);
     if(rc != 0) 
     {
-        printf(" Error send ioctl IOCTL_HFR4_SET_BUFFERS. buffer size: %u, buffer count: %u\n",
+        printf("Error send ioctl IOCTL_HFR4_SET_BUFFERS. buffer size: %u, buffer count: %u\n",
                dma_buf_params.buf_size, dma_buf_params.buf_count);
         return -1;
     }
@@ -51,12 +51,17 @@ int JetLTCM::Init()
     rc = ioctl(fpga_fd, IOCTL_HFR4_GET_BUFFERS, &temp_buf);
     if(rc != 0)
     {
-        printf(" Error send ioctl IOCTL_HFR4_GET_BUFFERS.\n");
+        printf("Error send ioctl IOCTL_HFR4_GET_BUFFERS.\n");
         return -1;
     }
     printf("--- Got new buffer params: dma_buffer_size=%d, dma_buffer_count=%d ---\n", temp_buf.buf_size, temp_buf.buf_count);
 
-    dma_mem_array = new void*[dma_buf_params.buf_count];
+    dma_mem_array = new(std::nothrow) void*[dma_buf_params.buf_count];
+    if (dma_mem_array == nullptr)
+    {
+        printf("Memory allocation error\n");
+        return -1;
+    }
     for(int i = 0; i < dma_buf_params.buf_count; i++) 
     {
         dma_mem_array[i] = mmap(0, dma_buf_params.buf_size, PROT_READ, MAP_SHARED, fpga_fd, i*dma_buf_params.buf_size);
@@ -77,7 +82,12 @@ int JetLTCM::Init()
     reg->control.reset = 0;
     close(user_fd);
 
-    data = new IQ[dma_buf_params.buf_size/sizeof(IQ)];
+    data = new(std::nothrow) IQ[dma_buf_params.buf_size/sizeof(IQ)];
+    if (data == nullptr)
+    {
+        printf("Memory allocation error\n");
+        return -1;
+    }
 
     return 0;
 }
@@ -105,6 +115,7 @@ int JetLTCM::SetParam(uint8_t _samp_freq,
         reg->real_date = (_real_date << 31) | _const_value;
         reg->dds_freq = _dds_freq;
         reg->control.samp_freq = _samp_freq;
+        usleep(1000);
         reg->control.reset = 1;
 
         rc = ioctl(fpga_fd, IOCTL_HFR4_DMA_START, 1);
@@ -121,7 +132,10 @@ IQ* JetLTCM::GetData()
     int rc;
     rc = ioctl(fpga_fd, IOCTL_HFR4_DMA_READ, &dma_buf);
     if(rc < 0)
-        printf("Error read dma data \n");
-    
-    return (IQ*)dma_mem_array[dma_buf.tail];
+    {
+        printf("Error read dma data\n");
+        return nullptr;
+    }
+    else
+        return (IQ*)dma_mem_array[dma_buf.tail];
 }
