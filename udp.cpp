@@ -1,6 +1,6 @@
 #include "udp.h"
 
-int сreate_udp_socket(int *s)
+int create_udp_socket(int *s)
 {
     char saddr[128];
     strcpy(saddr, ADDRESS_DEFAULT);

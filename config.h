@@ -4,7 +4,7 @@
 #include "register.h"
 
 // UDP config
-#define ADDRESS_DEFAULT     "192.168.1.158"
+#define ADDRESS_DEFAULT     "192.168.1.244"
 #define PORT_DEFAULT        1234
 #define FFT_SIZE_DEFAULT    2048*8
 
@@ -17,7 +17,7 @@
 #define DMA_BUF_COUNT       4
 
 // DDS config
-const uint8_t SAMP_FREQ     = SAMP_FREQ_500_kHz;
+const uint8_t SAMP_FREQ     = SAMP_FREQ_250_kHz;
 const bool REAL_DATE        = true;
 const uint16_t CONST_VALUE  = 0x0;
 const uint32_t DDS_FREQ     = 0x18000000;
@@ -25,5 +25,7 @@ const uint32_t DDS_FREQ     = 0x18000000;
 // Control config
 #define FILE_SAVE           0
 #define UDP_SEND            0
+#define TIME_ON             0
+#define TEST_CUDA           1
 
 #endif // CONFIG_H
