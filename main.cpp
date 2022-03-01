@@ -1,6 +1,7 @@
 #include <iostream>
 #include <time.h>
 #include <thread>
+#include <csignal>
 
 #include "can_h/can.h"
 #include "can_h/scan.h"
@@ -20,31 +21,25 @@
 #include <fstream>
 #endif
 
-typedef struct{
-	float I;
-	float Q;
-}IQ_float;
-
-int exit_thread = 0;
-
-void wait_exit()
+static volatile std::sig_atomic_t exit_thread;
+void sigintHandler(int sig)
 {
-    getchar();
     exit_thread = 1;
 }
 
-void work()
+void work(char *IP_addr, int samp_freq, int channel)
 {
+    std::signal(SIGINT, sigintHandler);
     int rc;
-    IQ *rb;
-    IQ_float *channel_one = new(std::nothrow) IQ_float[DEFAULT_SIZE];
+    IQ_DEV<int> *rb;
+    IQ<float> *channel_one = new(std::nothrow) IQ<float>[DEFAULT_SIZE];
     if (channel_one == nullptr)
     {
         printf("Memory allocation error\n");
         exit(0);
     }
 
-    IQ_float *channel_two = new(std::nothrow) IQ_float[DEFAULT_SIZE];
+    IQ<float> *channel_two = new(std::nothrow) IQ<float>[DEFAULT_SIZE];
     if (channel_two == nullptr)
     {
         printf("Memory allocation error\n");
@@ -53,7 +48,7 @@ void work()
 
 #if UDP_SEND
 	int udp_socket;
-    rc = create_udp_socket(&udp_socket);
+    rc = create_udp_socket(&udp_socket, IP_addr);
     if(rc < 0)
     {
         printf("Create udp socket fail\n");
@@ -73,15 +68,12 @@ void work()
         printf("Init JetLTCM fail\n");
         exit(0);
     }
-    rc = jet->SetParam(SAMP_FREQ, REAL_DATE, CONST_VALUE, DDS_FREQ);
+    rc = jet->SetParam(samp_freq, REAL_DATE, CONST_VALUE, DDS_FREQ);
     if(rc < 0)
     {
         printf("Set parameter JetLTCM fail\n");
         exit(0);
     }
-
-    std::thread t(wait_exit);
-    t.detach();
 
 #if FILE_SAVE
     std::ofstream ch_1("jetltcm2v2_s_1.complex", std::ios::app | std::ios::binary);
@@ -120,12 +112,16 @@ void work()
             // User code
 
 #if FILE_SAVE
-            ch_1.write((char*)channel_one, DEFAULT_SIZE*sizeof(IQ_float));
-            ch_2.write((char*)channel_two, DEFAULT_SIZE*sizeof(IQ_float));
+            ch_1.write((char*)channel_one, DEFAULT_SIZE*sizeof(IQ<float>));
+            ch_2.write((char*)channel_two, DEFAULT_SIZE*sizeof(IQ<float>));
 #endif
 
 #if UDP_SEND
-            ssize_t ret = send(udp_socket, channel_one, FFT_SIZE_DEFAULT, 0);
+            ssize_t ret;
+            if (channel == 1)
+                ret = send(udp_socket, channel_one, FFT_SIZE_DEFAULT, 0);
+            else
+                ret = send(udp_socket, channel_two, FFT_SIZE_DEFAULT, 0);
             if(ret != FFT_SIZE_DEFAULT) 
             {
                 printf("Error send data to UDP. Expected %d, send %d\n", (int)FFT_SIZE_DEFAULT, (int)ret);
@@ -152,8 +148,22 @@ void work()
     printf("Exit from work loop\n");
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc != 4) 
+    {
+       printf("usage: ./JetLTCM2V2_Main IP_addr_to_send_udp samp_freq channel\n");
+       printf("\tsamp_freq:\n");
+       printf("\t\tSAMP_FREQ_10_MHz     = 0\n");
+       printf("\t\tSAMP_FREQ_1_MHz      = 1\n");
+       printf("\t\tSAMP_FREQ_500_kHz    = 2\n");
+       printf("\t\tSAMP_FREQ_250_kHz    = 3\n");
+       printf("\t\tSAMP_FREQ_125_kHz    = 4\n");
+       printf("\t\tSAMP_FREQ_62_5_kHz   = 5\n");
+       printf("example: ./JetLTCM2V2_Main 192.168.1.240 1 1\n");
+       return 0;
+    }
+
 	// Can bus address
     uint8_t haddr = 126;
     Node can("can0");
@@ -174,7 +184,7 @@ int main()
     printf("Freq [MHz]: %u\n", controls.GetValue<uint32_t>(Control::FREQ));
     printf("Att  [dB]: %f\n", 0.1 * controls.GetValue<uint16_t>(Control::ATT));
 
-    std::thread t(work);
+    std::thread t(work, argv[1], atoi(argv[2]), atoi(argv[3]));
     t.join();
 
 	return 0;

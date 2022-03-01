@@ -23,7 +23,7 @@ JetLTCM::~JetLTCM()
 
     close(fpga_fd);
     delete[] dma_mem_array;
-    delete[] data;
+    //delete[] data;
 }
 
 int JetLTCM::Init()
@@ -82,12 +82,12 @@ int JetLTCM::Init()
     reg->control.reset = 0;
     close(user_fd);
 
-    data = new(std::nothrow) IQ[dma_buf_params.buf_size/sizeof(IQ)];
-    if (data == nullptr)
-    {
-        printf("Memory allocation error\n");
-        return -1;
-    }
+    // data = new(std::nothrow) IQ[dma_buf_params.buf_size/sizeof(IQ)];
+    // if (data == nullptr)
+    // {
+    //     printf("Memory allocation error\n");
+    //     return -1;
+    // }
 
     return 0;
 }
@@ -127,7 +127,7 @@ int JetLTCM::SetParam(uint8_t _samp_freq,
         return -1;
 }
 
-IQ* JetLTCM::GetData()
+IQ_DEV<int>* JetLTCM::GetData()
 {
     int rc;
     rc = ioctl(fpga_fd, IOCTL_HFR4_DMA_READ, &dma_buf);
@@ -137,5 +137,5 @@ IQ* JetLTCM::GetData()
         return nullptr;
     }
     else
-        return (IQ*)dma_mem_array[dma_buf.tail];
+        return (IQ_DEV<int>*)dma_mem_array[dma_buf.tail];
 }

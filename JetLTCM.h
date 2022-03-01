@@ -13,13 +13,20 @@
 #include "register.h"
 #include "hfr4dma-ctrl.h"
 
-typedef struct{
-	int I_1;
-	int Q_1;
+template<typename T>
+struct IQ{
+	T I;
+	T Q;
+};
 
-	int I_2;
-	int Q_2;
-}IQ;
+template<typename T>
+struct IQ_DEV{
+	T I_1;
+	T Q_1;
+
+	T I_2;
+	T Q_2;
+};
 
 class JetLTCM
 {
@@ -37,7 +44,7 @@ private:
 
     int fpga_fd;
 
-    IQ *data;
+    //IQ<int> *data;
 public:
     JetLTCM(std::string _device_c2h,
             std::string _device_user, 
@@ -70,9 +77,9 @@ public:
     /**
      * @brief Get the Data object
      * 
-     * @return IQ* pointer to data
+     * @return IQ_DEV<T>* pointer to data
      */
-    IQ* GetData();
+    IQ_DEV<int>* GetData();
 };
 
 #endif // JETLTCM_H

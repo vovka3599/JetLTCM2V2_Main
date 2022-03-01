@@ -24,8 +24,8 @@ const uint32_t DDS_FREQ     = 0x18000000;
 
 // Control config
 #define FILE_SAVE           0
-#define UDP_SEND            0
+#define UDP_SEND            1
 #define TIME_ON             0
-#define TEST_CUDA           1
+#define TEST_CUDA           0
 
 #endif // CONFIG_H

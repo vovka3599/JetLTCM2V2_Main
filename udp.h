@@ -34,6 +34,6 @@ typedef struct info_get_data
  * @param s                 udp socket
  * @return int              execution result
  */
-int create_udp_socket(int *s);
+int create_udp_socket(int *s, char *IP_addr);
 
 #endif // UDP_H
