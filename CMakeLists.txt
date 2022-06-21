@@ -33,6 +33,8 @@ add_library(cuda STATIC
     cuda.cu
 )
 
+add_compile_options(-O3 -DNDEBUG)
+
 target_compile_features(cuda PUBLIC cxx_std_11)
 set_target_properties(cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
