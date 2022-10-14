@@ -3,14 +3,19 @@
 
 #include <iostream>
 
-enum
+enum sample_rate
 {
-    SAMP_FREQ_10_MHz    = 0,
-    SAMP_FREQ_1_MHz     = 1,
-    SAMP_FREQ_500_kHz   = 2,
-    SAMP_FREQ_250_kHz   = 3,
-    SAMP_FREQ_125_kHz   = 4,
-    SAMP_FREQ_62_5_kHz  = 5
+    SAMP_RATE_10_MHz    = 0,
+    SAMP_RATE_1_MHz     = 1,
+    SAMP_RATE_500_kHz   = 2,
+    SAMP_RATE_250_kHz   = 3,
+    SAMP_RATE_125_kHz   = 4,
+    SAMP_RATE_62_5_kHz  = 5
+};
+
+enum adc_clk_use{
+    ADC_CLK_1 = 0,
+    ADC_CLK_2
 };
 
 /**

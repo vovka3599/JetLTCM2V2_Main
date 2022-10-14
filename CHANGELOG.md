@@ -1,6 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2022-10-14
+ 
+### Added
+- Added command line options
+- Dynamic frequency control parameters
+
+### Changed
+- Some parameters are managed in config.h
+
+### Fixed
+- general fixes
+
 ## [1.2.0] - 2022-06-21
  
 ### Added

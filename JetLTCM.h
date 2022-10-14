@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <assert.h>
 #include <unistd.h>
+#include "config.h"
 
 #include "register.h"
 #include "hfr4dma-ctrl.h"
@@ -70,10 +71,10 @@ namespace JETDEV
          * @param _dds_freq     synthesizer frequency    
          * @return int          execution result
          */
-        int SetParam(uint8_t _samp_freq, 
-                    bool _real_date, 
-                    uint16_t _const_value,
-                    uint32_t _dds_freq,
+        int SetParam(uint8_t _samp_freq,
+                    uint32_t _center_freq, 
+                    uint32_t _freq,
+                    uint32_t _ifreq,
                     bool _adc_clk_use);
 
         /**

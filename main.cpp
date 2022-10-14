@@ -9,6 +9,7 @@
 
 #include "JetLTCM.h"
 #include "config.h"
+#include "command_arguments.h"
 
 #if TEST_CUDA
 #include "cuda_f.h"
@@ -28,7 +29,7 @@ void sigintHandler(int sig)
     exit_thread = 1;
 }
 
-void work(char *IP_addr, int samp_freq, int channel)
+void work(struct command_arguments *ca)
 {
     std::signal(SIGINT, sigintHandler);
     int rc;
@@ -48,7 +49,7 @@ void work(char *IP_addr, int samp_freq, int channel)
     }
 
 #if UDP_SEND
-    UDP::Udp udp(IP_addr, UDP_SEND_PORT);
+    UDP::Udp udp(ca->saddr, ca->port);
 #endif
     
     JETDEV::JetLTCM *jet = new(std::nothrow) JETDEV::JetLTCM(DEVICE_C2H, DEVICE_USER, DMA_BUF_COUNT, DMA_BUF_SIZE);
@@ -63,8 +64,7 @@ void work(char *IP_addr, int samp_freq, int channel)
         printf("Init JetLTCM fail\n");
         exit(0);
     }
-    rc = jet->SetParam(samp_freq, REAL_DATE, CONST_VALUE, DDS_VALUE, ADC_CLK_USE);
-    printf("DDS_VALUE = %x\n", DDS_VALUE);
+    rc = jet->SetParam(ca->samp_rate, ca->center_frequency, ca->frequency, ca->intermediate_frequency, ca->adc_clk_use);
     if(rc < 0)
     {
         printf("Set parameter JetLTCM fail\n");
@@ -112,7 +112,7 @@ void work(char *IP_addr, int samp_freq, int channel)
 #endif
 
 #if UDP_SEND
-            if (channel == 1)
+            if (ca->channel == 1)
                 udp.send_data(channel_one, DEFAULT_SIZE);
             else
                 udp.send_data(channel_two, DEFAULT_SIZE);
@@ -137,19 +137,9 @@ void work(char *IP_addr, int samp_freq, int channel)
 
 int main(int argc, char* argv[])
 {
-    if (argc != 4) 
-    {
-       printf("usage: ./JetLTCM2V2_Main IP_addr_to_send_udp samp_freq channel\n");
-       printf("\tsamp_freq:\n");
-       printf("\t\tSAMP_FREQ_10_MHz     = 0\n");
-       printf("\t\tSAMP_FREQ_1_MHz      = 1\n");
-       printf("\t\tSAMP_FREQ_500_kHz    = 2\n");
-       printf("\t\tSAMP_FREQ_250_kHz    = 3\n");
-       printf("\t\tSAMP_FREQ_125_kHz    = 4\n");
-       printf("\t\tSAMP_FREQ_62_5_kHz   = 5\n");
-       printf("example: ./JetLTCM2V2_Main 192.168.1.240 1 1\n");
-       return 0;
-    }
+    struct command_arguments ca;
+    parse_arguments(argc, argv, &ca);
+    get_arguments(&ca);
 
 #if CAN_REC
 	// Can bus address
@@ -172,7 +162,7 @@ int main(int argc, char* argv[])
     printf("Freq [MHz]: %u\n", controls.GetValue<uint32_t>(Control::FREQ));
     printf("Att  [dB]: %f\n", 0.1 * controls.GetValue<uint16_t>(Control::ATT));
 #endif
-    std::thread t(work, argv[1], atoi(argv[2]), atoi(argv[3]));
+    std::thread t(work, &ca);
     t.join();
 
 	return 0;

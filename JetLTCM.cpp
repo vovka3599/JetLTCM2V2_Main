@@ -86,10 +86,10 @@ namespace JETDEV
         return 0;
     }
 
-    int JetLTCM::SetParam(uint8_t _samp_freq, 
-                        bool _real_date, 
-                        uint16_t _const_value,
-                        uint32_t _dds_freq,
+    int JetLTCM::SetParam(uint8_t _samp_freq,
+                        uint32_t _center_freq, 
+                        uint32_t _freq,
+                        uint32_t _ifreq,
                         bool _adc_clk_use)
     {
         if (reg)
@@ -107,8 +107,13 @@ namespace JETDEV
             if(rc != 0) return -1;
 
             reg->control.reset = 0;
-            reg->real_date = (_real_date << 31) | _const_value;
-            reg->dds_freq = _dds_freq;
+            reg->real_date = (REAL_DATE << 31) | CONST_VALUE;
+
+            double pch = ((double)_ifreq - ((double)_freq - (double)_center_freq)) / 1000000.0;
+            uint32_t dds_value = ((DDS_SYSTEM_CLOCK_MHz*2-pch)/DDS_SYSTEM_CLOCK_MHz)*(1<<29);
+            printf("DDS = %x\n", dds_value);
+
+            reg->dds_freq = dds_value;
             reg->control.samp_freq = _samp_freq;
             reg->control.adc_clk_use = _adc_clk_use;
             usleep(1000);
